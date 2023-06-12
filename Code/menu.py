@@ -1,4 +1,3 @@
-
 import pgzrun
 from pgzero.actor import Actor
 from random import randint
@@ -147,7 +146,8 @@ def update():
 
     elif game_state == 2:
         if time.time() - timer >= timer2:
-            
+            if time.time() - timer >= timer1:
+                game_state = 0
 
 
 def on_key_down(key):
