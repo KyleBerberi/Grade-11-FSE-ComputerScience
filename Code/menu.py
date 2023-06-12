@@ -17,9 +17,9 @@ end_screen1 = Actor('end_screen1.png')
 end_screen2 = Actor('end_screen2.png')
 end_screen3 = Actor('end_screen3.png')
 
-heart1.pos = (20, 30)
-heart2.pos = (40, 30)
-heart3.pos = (60, 30)
+heart1.pos = (60, 30)
+heart2.pos = (100, 30)
+heart3.pos = (140, 30)
 player.pos = (400, 470)
 bullets = []
 enemy_bullets = []
@@ -71,23 +71,24 @@ def draw():
 
 
 def on_mouse_down(pos):
-    global game_state
+    global game_state, music
     if start.collidepoint(pos):
         print('Start')
         game_state = 1
+        main_track = 'song1'
+        music.set_volume(0.3)
+        music.play(main_track)
     elif setting.collidepoint(pos):
         print('Exit')
     elif exit_button.collidepoint(pos):
         print('Menu')
 
 
+
 def update():
     global game_state, timer, music
     if game_state == 1:
         global health, lives
-        main_track = 'song1'
-        music.set_volume(0.3)
-        music.play(main_track)
         if keyboard.left:
             player.x -= 5
             player.flip_x = True
@@ -128,6 +129,10 @@ def update():
                     if lives == 0:
                         game_state = 10
                         timer = time.time()
+                    elif lives == 2:
+                        heart3.image = 'empty_heart.png'
+                    elif lives == 1:
+                        heart2.image = 'empty_heart.png'
 
         kong.x += kong.velocity
 
@@ -148,6 +153,7 @@ def update():
         if time.time() - timer >= timer2:
             if time.time() - timer >= timer1:
                 game_state = 0
+
 
 
 def on_key_down(key):
