@@ -139,8 +139,10 @@ def update():
                         break
                 else:
                     if bullets[bullet].colliderect(kong):
+                        sounds.metal.play()
                         bullets.remove(bullets[bullet])
                         health -= 10
+
 
         for enemy_bullet in reversed(range(len(enemy_bullets))):
             enemy_bullets[enemy_bullet].y += enemy_bullets[enemy_bullet].vy
@@ -241,6 +243,7 @@ def level2():
             else:
                 if bullets[bullet].colliderect(kong):
                     bullets.remove(bullets[bullet])
+                    sounds.metal.play()
                     health -= 10
 
     for enemy_bullet in reversed(range(len(enemy_bullets))):
