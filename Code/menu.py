@@ -19,6 +19,13 @@ end_screen1 = Actor('end_screen1.png')
 end_screen2 = Actor('end_screen2.png')
 end_screen3 = Actor('end_screen3.png')
 
+monkey_x = 0
+monkey_y = 0
+monkey_shoot = 0
+player_y = 0
+player_x = 0
+player_shoot = 0
+
 heart1.pos = (60, 30)
 heart2.pos = (100, 30)
 heart3.pos = (140, 30)
@@ -48,14 +55,13 @@ timer2 = 2  # in seconds
 
 
 def draw():
-    global game_state
-    global screen
+    global game_state, screen, level
     screen.clear()
     if game_state == 0:
         bg.draw()
     elif game_state == 5:
         end_screen2.draw()
-    elif game_state == 1:
+    elif game_state == 1 or game_state == 3:
         screen.blit('jungle', (0, 0))
         player.draw()
         heart1.draw()
@@ -72,20 +78,6 @@ def draw():
         end_screen1.draw()
     elif game_state == 2:
         end_screen2.draw()
-    elif game_state == 3:
-        screen.clear
-        for bullet in bullets:
-            bullet.draw()
-        for enemy_bullet in enemy_bullets:
-            enemy_bullet.draw()
-        screen.blit('jungle', (0, 0))
-        player.draw()
-        heart1.draw()
-        heart2.draw()
-        heart3.draw()
-        kong.draw()
-        health_bar_width = health * 2
-        screen.draw.filled_rect(Rect((50, 50), (health_bar_width, 20)), "red")
     elif game_state == 20:
         menu.draw()
     elif game_state == 30:
@@ -107,87 +99,90 @@ def on_mouse_down(pos):
 
 
 def update():
-    global game_state, timer, music
-    if game_state == 1:
-        global health, lives
-        if time.time() - timer >= 8:
-            sounds.monkey.play()
-            timer = time.time()
-        if keyboard.left:
-            player.x -= 5
-            player.flip_x = True
-        elif keyboard.right:
-            player.x += 5
-            player.angle = 0
+    global game_state, timer, music, fire_rate, health, lives
+    if time.time() - timer >= 8:
+        sounds.monkey.play()
+        timer = time.time()
+    if keyboard.left:
+        player.x -= 5
+    elif keyboard.right:
+        player.x += 5
+        player.angle = 0
 
-        if player.x < 18:
-            player.x = 18
-        if player.x > 782:
-            player.x = 782
+    if player.x < 18:
+        player.x = 18
+    if player.x > 782:
+        player.x = 782
 
-        for bullet in reversed(range(len(bullets))):
-            bullets[bullet].y -= bullets[bullet].vy
+    for bullet in reversed(range(len(bullets))):
+        bullets[bullet].y -= bullets[bullet].vy
 
-            if bullets[bullet].y <= 0:
-                del bullets[bullet]
+        if bullets[bullet].y <= 0:
+            del bullets[bullet]
+        else:
+            for i in reversed(range(len(enemy_bullets))):
+                if bullets[bullet].colliderect(enemy_bullets[i]):
+                    sounds.splat.play()
+                    del bullets[bullet]
+                    del enemy_bullets[i]
+                    break
             else:
-                for enemy_bullet in reversed(range(len(enemy_bullets))):
-                    if bullets[bullet].colliderect(enemy_bullets[enemy_bullet]):
-                        sounds.splat.play()
-                        del bullets[bullet]
-                        del enemy_bullets[enemy_bullet]
-                        break
-                else:
-                    if bullets[bullet].colliderect(kong):
-                        sounds.metal.play()
-                        bullets.remove(bullets[bullet])
-                        health -= 10
+                if bullets[bullet].colliderect(kong):
+                    sounds.metal.play()
+                    bullets.remove(bullets[bullet])
+                    health -= 10
 
+    for i in reversed(range(len(enemy_bullets))):
+        enemy_bullets[i].y += enemy_bullets[i].vy
+        if enemy_bullets[i].y >= HEIGHT:
+            del enemy_bullets[i]
+        else:
+            if enemy_bullets[i].colliderect(player):
+                del enemy_bullets[i]
+                lives -= 1
+                if lives == 0:
+                    game_state = 10
+                    timer = time.time()
+                    sounds.lose.play()
+                    reset_game()  # Reset the game when lives reach 0
+                elif lives == 2:
+                    heart3.image = 'empty_heart.png'
+                    sounds.hit.play()  # Play 'hit' sound when a live is lost
+                elif lives == 1:
+                    heart2.image = 'empty_heart.png'
+                    sounds.hit.play()  # Play 'hit' sound when a live is lost
+                    break
 
-        for enemy_bullet in reversed(range(len(enemy_bullets))):
-            enemy_bullets[enemy_bullet].y += enemy_bullets[enemy_bullet].vy
-            if enemy_bullets[enemy_bullet].y >= HEIGHT:
-                del enemy_bullets[enemy_bullet]
-            else:
-                if enemy_bullets[enemy_bullet].colliderect(player):
-                    enemy_bullets.remove(enemy_bullets[enemy_bullet])
-                    lives -= 1
-                    if lives == 0:
-                        game_state = 10
-                        timer = time.time()
-                        sounds.lose.play()
-                        reset_game()  # Reset the game when lives reach 0
-                    elif lives == 2:
-                        heart3.image = 'empty_heart.png'
-                        sounds.hit.play()  # Play 'hit' sound when a live is lost
-                    elif lives == 1:
-                        heart2.image = 'empty_heart.png'
-                        sounds.hit.play()  # Play 'hit' sound when a live is lost
+    kong.x += kong.velocity
 
-        kong.x += kong.velocity
+    if kong.left < 0 or kong.right > WIDTH:
+        kong.velocity *= -1
+    if random.random() < fire_rate:  # Adjust the firing rate of the enemy
+        fire_enemy_bullet()
+        sounds.throw.play()
 
-        if kong.left < 0 or kong.right > WIDTH:
-            kong.velocity *= -1
-        if random.random() < 0.01:  # Adjust the firing rate of the enemy
-            fire_enemy_bullet()
-            sounds.throw.play()
+    if health <= 0:
+        timer = time.time()
+        game_state = 5
+        sounds.win.play()
 
-        if health <= 0:
-            timer = time.time()
-            game_state = 5
-            sounds.win.play()
+elif game_state == 10:
+if time.time() - timer >= timer1:
+    game_state = 0
 
-    elif game_state == 10:
-        if time.time() - timer >= timer1:
-            game_state = 0
+elif game_state == 5:
+if time.time() - timer >= timer2:
+    if time.time() - timer >= timer1:
+        game_state = 3
+        print('gamestate = 3')
 
-    elif game_state == 5:
-        if time.time() - timer >= timer2:
-            if time.time() - timer >= timer1:
-                game_state = 3
-
-    if game_state == 3:
-        level2()
+if game_state == 3:
+    health = 150
+    lives = 3
+    heart2.image = 'heart2.png'
+    heart3.image = 'heart3.png'
+    fire_rate += 3.9
+    print('level2')
 
 
 def reset_game():
@@ -206,87 +201,15 @@ def reset_game():
 
 
 def level2():
-    global health, lives, bullets, enemy_bullets, game_state, timer, music
+    global health, lives, bullets, enemy_bullets, game_state, timer, music, fire_rate
     health = 150
     lives = 3
     bullets = []
     enemy_bullets = []
     heart2.image = 'heart2.png'
     heart3.image = 'heart3.png'
-    if time.time() - timer >= 8:
-        sounds.monkey.play()
-        timer = time.time()
-    if keyboard.left:
-        player.x -= 5
-        player.flip_x = True
-    elif keyboard.right:
-        player.x += 5
-        player.angle = 0
-
-    if player.x < 18:
-        player.x = 18
-    if player.x > 782:
-        player.x = 782
-
-    for bullet in reversed(range(len(bullets))):
-        bullets[bullet].y -= bullets[bullet].vy
-
-        if bullets[bullet].y <= 0:
-            del bullets[bullet]
-        else:
-            for enemy_bullet in reversed(range(len(enemy_bullets))):
-                if bullets[bullet].colliderect(enemy_bullets[enemy_bullet]):
-                    sounds.splat.play()
-                    del bullets[bullet]
-                    del enemy_bullets[enemy_bullet]
-                    break
-            else:
-                if bullets[bullet].colliderect(kong):
-                    bullets.remove(bullets[bullet])
-                    sounds.metal.play()
-                    health -= 10
-
-    for enemy_bullet in reversed(range(len(enemy_bullets))):
-        enemy_bullets[enemy_bullet].y += enemy_bullets[enemy_bullet].vy
-        if enemy_bullets[enemy_bullet].y >= HEIGHT:
-            del enemy_bullets[enemy_bullet]
-        else:
-            if enemy_bullets[enemy_bullet].colliderect(player):
-                enemy_bullets.remove(enemy_bullets[enemy_bullet])
-                lives -= 1
-                if lives == 0:
-                    game_state = 10
-                    timer = time.time()
-                    sounds.lose.play()
-                    reset_game()  # Reset the game when lives reach 0
-                elif lives == 2:
-                    heart3.image = 'empty_heart.png'
-                    sounds.hit.play()  # Play 'hit' sound when a live is lost
-                elif lives == 1:
-                    heart2.image = 'empty_heart.png'
-                    sounds.hit.play()  # Play 'hit' sound when a live is lost
-
-    kong.x += kong.velocity
-
-    if kong.left < 0 or kong.right > WIDTH:
-        kong.velocity *= -1
-    if random.random() < 0.01:  # Adjust the firing rate of the enemy
-        fire_enemy_bullet()
-        sounds.throw.play()
-
-    if health <= 0:
-        timer = time.time()
-        game_state = 5
-        sounds.win.play()
-
-    elif game_state == 10:
-        if time.time() - timer >= timer1:
-            game_state = 0
-
-    elif game_state == 5:
-        if time.time() - timer >= timer2:
-            if time.time() - timer >= timer1:
-                game_state = 3
+    fire_rate += 3.9
+    print('level2')
 
 
 def on_key_down(key):
