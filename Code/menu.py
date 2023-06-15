@@ -35,7 +35,7 @@ heart3.pos = (140, 30)
 player.pos = (400, 470)
 bullets = []
 enemy_bullets = []
-health = 100
+health = 170
 lives = 3
 game_state = 0
 kong = Actor("enemy")
@@ -188,8 +188,9 @@ def update():
 
 
 def reset_game():
-    global health, lives, bullets, enemy_bullets
-    health = 100
+    global health, lives, bullets, enemy_bullets, state
+    state = 0
+    health = 170
     lives = 3
     bullets = []
     enemy_bullets = []
@@ -228,9 +229,9 @@ def fire_enemy_bullet():
     enemy_bullets.append(enemy_bullet)
 def restart_level():
     global health, lives, bullets, enemy_bullets, game_state, timer, music, monkey_shoot, player_shoot, player_speed, state
-    health = 150
+    health = 250
     lives = 3
-    monkey_shoot =0.04
+    monkey_shoot = 0.08
     player_speed = 2.5
     state = 1
     timer = time.time()
