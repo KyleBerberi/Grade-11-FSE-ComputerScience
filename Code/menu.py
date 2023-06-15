@@ -8,6 +8,9 @@ import time
 from pygame import Rect
 
 global music
+
+state = 0
+win = Actor('win.png')
 WIDTH = 800
 HEIGHT = 554
 player = Actor('mc.png')
@@ -21,11 +24,10 @@ end_screen1 = Actor('end_screen1.png')
 end_screen2 = Actor('end_screen2.png')
 end_screen3 = Actor('end_screen3.png')
 
-monkey_r = 0
-monkey_l = 0
+monkey_speed = -1
 monkey_shoot = 0.04
 player_speed = 5
-player_shoot = 0
+
 
 heart1.pos = (60, 30)
 heart2.pos = (100, 30)
@@ -83,6 +85,8 @@ def draw():
         menu.draw()
     elif game_state == 30:
         exit_screen.draw()
+    elif game_state == 40:
+        win.draw()
 
 
 def on_mouse_down(pos):
@@ -100,7 +104,7 @@ def on_mouse_down(pos):
 
 
 def update():
-    global game_state, timer, music, monkey_shoot, health, lives, sounds
+    global game_state, timer, music, monkey_shoot, health, lives, sounds, state
     if game_state == 1 or game_state == 3 or game_state == 7:
         if time.time() - timer >= 8:  # Random Monkey noises
             sounds.monkey.play()
@@ -118,21 +122,21 @@ def update():
         for bullet in reversed(range(len(bullets))):  # Remove bullets that are out of the screen
             bullets[bullet].y -= bullets[bullet].vy  # Decrease the bullet's y velocity'
             if bullets[bullet].y <= 0:  # If the bullet hits the ground
-                bullets_to_remove.append(bullet)  # Append the index to the removal list
+                bullets_to_remove.append(bullet)  # Append the i to the removal list
             else:
                 for i in reversed(range(len(enemy_bullets))):
                     if bullets[bullet].colliderect(enemy_bullets[i]):  # If the bullet hits the enemy
                         sounds.splat.play()  # Play 'splat' sound
-                        bullets_to_remove.append(bullet)  # Append the bullet index to the removal list
+                        bullets_to_remove.append(bullet)  # Append the bullet i to the removal list
                         del enemy_bullets[i]  # Remove the enemy bullet from the list
                         break
                 else:
                     if bullets[bullet].colliderect(kong):  # If the bullet hits the enemy
                         sounds.metal.play()  # Play 'metal' sound
-                        bullets_to_remove.append(bullet)  # Append the bullet index to the removal list
+                        bullets_to_remove.append(bullet)  # Append the bullet i to the removal list
                         health -= 10  # Decrease the health of the enemy
-        for index in bullets_to_remove:
-            del bullets[index]  # Remove the bullets from the list
+        for i in bullets_to_remove:
+            del bullets[i]  # Remove the bullets from the list
         enemy_bullets_to_remove = []
         for i in reversed(range(len(enemy_bullets))):
             enemy_bullets[i].y += enemy_bullets[i].vy
@@ -146,7 +150,6 @@ def update():
                         game_state = 10
                         timer = time.time()
                         sounds.lose.play()
-                        reset_game()  # Reset the game when lives reach 0
                     elif lives == 2:
                         heart3.image = 'empty_heart.png'
                         sounds.hit.play()  # Play 'hit' sound when a life is lost
@@ -154,11 +157,13 @@ def update():
                         heart2.image = 'empty_heart.png'
                         sounds.hit.play()  # Play 'hit' sound when a life is lost
                         break
-        for index in enemy_bullets_to_remove:
-            del enemy_bullets[index]
+        for i in enemy_bullets_to_remove:
+            if i < len(enemy_bullets):  # Add a check to ensure the index is within range
+                del enemy_bullets[i]
+
         kong.x += kong.velocity
         if kong.left < 0 or kong.right > WIDTH:
-            kong.velocity *= -1
+            kong.velocity *= monkey_speed
         if random.random() < monkey_shoot:  # Adjust the firing rate of the enemy
             fire_enemy_bullet()
             sounds.throw.play()
@@ -168,13 +173,18 @@ def update():
             sounds.win.play()
     elif game_state == 10:
         if time.time() - timer >= timer1:
+            reset_game()
             game_state = 0
     elif game_state == 5:
         if time.time() - timer >= timer2:
-            if time.time() - timer >= timer1:
-                game_state = 3
-                print('gamestate = 3')
-                restart_level()
+            game_state = 3
+            print('gamestate = 3')
+            restart_level()
+        if health <= 0:
+            if state == 1:
+                game_state = 40
+
+
 
 
 def reset_game():
@@ -199,6 +209,12 @@ def on_key_down(key):
         sounds.gun.play()
     if game_state == 30 and key == keys.ESCAPE:
         game_state = 0
+    if game_state == 40 and key == keys.ESCAPE:
+        reset_game()
+        game_state = 0
+    if game_state == 1 and key == keys.ESCAPE:
+        reset_game()
+        game_state = 0
 
 def fire_bullet():
     bullet = Actor('bullets.png')  # Update the image filename to 'bullet.png'
@@ -211,10 +227,12 @@ def fire_enemy_bullet():
     enemy_bullet.pos = (kong.x + 20, kong.y + 30)
     enemy_bullets.append(enemy_bullet)
 def restart_level():
-    global health, lives, bullets, enemy_bullets, game_state, timer, music, monkey_shoot
+    global health, lives, bullets, enemy_bullets, game_state, timer, music, monkey_shoot, player_shoot, player_speed, state
     health = 150
     lives = 3
-    monkey_shoot =0.02
+    monkey_shoot =0.04
+    player_speed = 2.5
+    state = 1
     timer = time.time()
     main_track = 'song1'
     music.set_volume(0.3)
